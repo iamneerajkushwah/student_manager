@@ -1,30 +1,32 @@
 from fastapi import APIRouter, HTTPException
-from models.student import Student
+from models.student import Student ,StudentResponse
 from database import student_collections
 from typing import Optional
 
 router = APIRouter()
 
-@router.get("/students")
-def view_all(course: str | None = None):
+@router.get("/students", response_model=list[StudentResponse])
+def view_all(course: str | None = None, 
+             age: int | None = None):
+
+    filters = {}
 
     if course:
+        filters["course"] = course
+
+    if age: 
+        filters["age"] = age
+
+    if filters:
         students = list(
-            student_collections.find(
-                {"course":course}
-            )
+            student_collections.find(filters)
         )
-
-    else:
-        students = list(
-            student_collections.find()
-        )
-
-
+    
     for student in students:
-        student["_id"] = str(student["_id"])
+        student.pop("_id", None)
+    
+    return students
 
-        return {"Students": students}
     
 
 
@@ -46,7 +48,7 @@ def add(newstudent: Student):
 
 
 
-@router.get("/students/{name}")
+@router.get("/students/{name}", response_model=StudentResponse)
 def view_one(name: str):
     student = student_collections.find_one({"name": name})
 
@@ -55,7 +57,7 @@ def view_one(name: str):
 
     student["_id"] = str(student["_id"])
 
-    return {"Student": student}
+    return student
 
 
 
