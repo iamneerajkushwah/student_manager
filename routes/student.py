@@ -1,12 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models.student import Student ,StudentResponse
 from database import students_collection
 from typing import Optional
+from dependencies.auth import (get_current_user)
+
 
 router = APIRouter()
 
 @router.get("/students", response_model=list[StudentResponse])
-def view_all(course: str | None = None, age: int | None = None):
+def view_all(
+    current_user: str = Depends(get_current_user), 
+    course: str | None = None, 
+    age: int | None = None
+):
 
     filters = {}
 
@@ -30,7 +36,11 @@ def view_all(course: str | None = None, age: int | None = None):
 
 
 @router.post("/students")
-def add(newstudent: Student):
+def add(
+    newstudent: Student,
+    current_user: str = Depends(get_current_user)
+):
+
     existing_student = students_collection.find_one({"name": newstudent.name})
 
     if existing_student:
@@ -48,7 +58,10 @@ def add(newstudent: Student):
 
 
 @router.get("/students/{name}", response_model=StudentResponse)
-def view_one(name: str):
+def view_one(
+    name: str,
+    current_user: str = Depends(get_current_user)
+):
     student = students_collection.find_one({"name": name})
 
     if not student:
@@ -62,7 +75,11 @@ def view_one(name: str):
 
 
 @router.put("/students/{name}")
-def update_one(studentnewdata: Student, name: str):
+def update_one(
+    studentnewdata: Student, 
+    name: str,
+    current_user: str = Depends(get_current_user)
+    ):
     student = students_collection.find_one({"name": name})
 
     if not student:
@@ -84,7 +101,10 @@ def update_one(studentnewdata: Student, name: str):
 
 
 @router.delete("/students/{name}")
-def delete_one(name: str):
+def delete_one(
+    name: str,
+    current_user: str = Depends(get_current_user)
+):
     student = students_collection.find_one({"name": name})
 
     if not student:
