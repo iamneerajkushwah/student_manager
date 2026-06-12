@@ -10,4 +10,9 @@ class StudentResponse(BaseModel):
     name: str
     age: int
     course: str
-    
+
+class StudentListResponse(BaseModel):
+    total: int
+    skip: int
+    limit: int
+    data: list[StudentResponse]
