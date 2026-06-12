@@ -1,17 +1,20 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models.student import Student ,StudentResponse
+from models.student import Student ,StudentResponse, StudentListResponse
 from database import students_collection
 from typing import Optional
 from dependencies.auth import (get_current_user)
-
+import pymongo
 
 router = APIRouter()
 
-@router.get("/students", response_model=list[StudentResponse])
+@router.get("/students", response_model=StudentListResponse)
 def view_all(
     current_user: str = Depends(get_current_user), 
+    search: str | None = None,
     course: str | None = None, 
-    age: int | None = None
+    age: int | None = None,
+    skip: int = 0,
+    limit: int = 10
 ):
 
     filters = {}
@@ -19,18 +22,23 @@ def view_all(
     if course:
         filters["course"] = course
 
-    if age: 
+    if age is not None: 
         filters["age"] = age
 
+    total = students_collection.count_documents(filters)
     
-    students = list(students_collection.find(filters))
+    students = list(students_collection.find(filters).skip(skip).limit(limit).sort("age", pymongo.DESCENDING))
     
-
     for student in students:
         if "_id" in student:
             student["_id"] = str(student.pop("_id"))
     
-    return students
+    return {
+    "total": total,
+    "skip": skip,
+    "limit": limit,
+    "data": students
+}
 
     
 
