@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from bson import ObjectId
 from bson.errors import InvalidId
 
-def get_object_id(student_id: str):
+def get_student_object_id(student_id: str):
     try:
         return ObjectId(student_id)
     except InvalidId:

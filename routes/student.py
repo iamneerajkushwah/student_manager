@@ -4,7 +4,7 @@ from database import students_collection
 from typing import Optional
 from dependencies.auth import (get_current_user)
 from pymongo import ASCENDING, DESCENDING
-from utils.mongo import get_object_id, serialize_student
+from utils.helpers import get_student_object_id, serialize_student
 
 router = APIRouter()
 
@@ -20,7 +20,9 @@ def view_all(
     limit: int = Query(default=10, ge=1, le=100)
 ):
 
-    filters = {}
+    filters = {
+        "user_id": current_user["user_id"]
+    }
 
     if search:
         filters["name"] = {
@@ -78,7 +80,13 @@ def add(
         raise HTTPException(status_code=400, detail="Student Already Exists In DB")
 
     result = students_collection.insert_one(
-        {"name": newstudent.name, "age": newstudent.age, "course": newstudent.course}
+        {
+            "name": newstudent.name, 
+            "age": newstudent.age, 
+            "course": newstudent.course,
+            "user_id": current_user["user_id"]
+            
+        }
     )
 
     
@@ -96,21 +104,36 @@ def add(
 
 
 
-@router.get("/students/{student_id}", response_model=StudentResponse)
+@router.get(
+        "/students/{student_id}", 
+        response_model=StudentResponse
+)
 def view_one(
     student_id: str,
     current_user: str = Depends(get_current_user)
 ):
-    student_object_id = get_object_id(student_id)
+    student_object_id = get_student_object_id(student_id)
 
     student = students_collection.find_one({"_id": student_object_id})
 
     if not student:
-        raise HTTPException(status_code=404, detail="Student Doesn't Exist In DB")
+        raise HTTPException(
+            status_code=404, 
+            detail="Student Doesn't Exist In DB"
+        )
+    
+    if student["user_id"] != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to access this student"
+        )
 
-    student = serialize_student(student)
-
-    return student
+    return {
+    "id": str(student["_id"]),
+    "name": student["name"],
+    "age": student["age"],
+    "course": student["course"]
+}
 
 
 
@@ -124,7 +147,7 @@ def update_one(
     current_user: str = Depends(get_current_user)
 ):
     
-    student_object_id = get_object_id(student_id)
+    student_object_id = get_student_object_id(student_id)
 
     student = students_collection.find_one(
         {"_id": student_object_id}
@@ -134,6 +157,12 @@ def update_one(
         raise HTTPException(
             status_code=404,
             detail="Student Doesn't Exist In DB"
+        )
+    
+    if student["user_id"] != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to update this student "
         )
     
     existing_student = students_collection.find_one(
@@ -187,7 +216,7 @@ def delete_one(
     student_id: str,
     current_user: str = Depends(get_current_user)
 ):
-    student_object_id = get_object_id(student_id)
+    student_object_id = get_student_object_id(student_id)
 
     student = students_collection.find_one(
         {"_id": student_object_id}
@@ -197,6 +226,12 @@ def delete_one(
         raise HTTPException(
             status_code=404,
             detail="Student Doesn't Exist In DB"
+        )
+    
+    if student["user_id"] != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to delete this account"
         )
 
     students_collection.delete_one(

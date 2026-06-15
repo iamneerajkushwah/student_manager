@@ -1,9 +1,9 @@
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 import os
 
-# load_dotenv()
+load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
@@ -36,9 +36,10 @@ def verify_access_token(token: str):
             algorithms=[ALGORITHM]
         )
 
-        username = payload.get("sub")
-
-        return username
+        return {
+            "username": payload.get("sub"),
+            "user_id": payload.get("user_id")
+        }
     
     except JWTError:
         return None

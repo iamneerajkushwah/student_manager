@@ -61,7 +61,10 @@ def login(user: UserLogin):
         )
     
     access_token = create_acess_token(
-        {"sub": user.username}
+        {
+            "sub": db_user["username"],
+            "user_id": str(db_user["_id"])
+        }
     )
 
     return {
