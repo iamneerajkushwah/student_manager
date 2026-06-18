@@ -38,7 +38,8 @@ def verify_access_token(token: str):
 
         return {
             "username": payload.get("sub"),
-            "user_id": payload.get("user_id")
+            "user_id": payload.get("user_id"),
+            "role": payload.get("role")
         }
     
     except JWTError:

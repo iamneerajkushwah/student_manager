@@ -5,6 +5,7 @@ from typing import Optional
 from dependencies.auth import (get_current_user)
 from pymongo import ASCENDING, DESCENDING
 from utils.helpers import get_student_object_id, serialize_student
+from datetime import datetime
 
 router = APIRouter()
 
@@ -19,8 +20,10 @@ def view_all(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=10, ge=1, le=100)
 ):
-
-    filters = {
+    if current_user["role"] == "admin":
+        filters = {}
+    else:
+        filters = {
         "user_id": current_user["user_id"]
     }
 
@@ -79,13 +82,16 @@ def add(
     if existing_student:
         raise HTTPException(status_code=400, detail="Student Already Exists In DB")
 
+    now = datetime.utcnow()
+
     result = students_collection.insert_one(
         {
             "name": newstudent.name, 
             "age": newstudent.age, 
             "course": newstudent.course,
-            "user_id": current_user["user_id"]
-            
+            "user_id": current_user["user_id"],
+            "created_at": now,
+            "updated_at": now  
         }
     )
 
@@ -185,6 +191,7 @@ def update_one(
                     "name": studentnewdata.name,
                     "age": studentnewdata.age,
                     "course": studentnewdata.course,
+                    "updated_at": datetime.utcnow()
                 }
             }
         )
@@ -244,3 +251,8 @@ def delete_one(
     "student_name": student["name"]
 }
 
+@router.get("/me")
+def me (
+    current_user = Depends(get_current_user)
+):
+    return current_user

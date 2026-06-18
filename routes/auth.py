@@ -10,10 +10,10 @@ router = APIRouter(
 )
 
 @router.post("/register")
-def register(user: User):
+def register(newuser: User):
 
     existing_user = users_collection.find_one(
-        {"username": user.username}
+        {"username": newuser.username}
     )
 
     if existing_user:
@@ -23,13 +23,14 @@ def register(user: User):
         )
     
     hashed_password = hash_password(
-        user.password
+        newuser.password
     )
 
     users_collection.insert_one(
         {
-            "username": user.username,
-            "password": hashed_password
+            "username": newuser.username,
+            "password": hashed_password,
+            "role": newuser.role
         }
     )
 
@@ -63,7 +64,8 @@ def login(user: UserLogin):
     access_token = create_acess_token(
         {
             "sub": db_user["username"],
-            "user_id": str(db_user["_id"])
+            "user_id": str(db_user["_id"]),
+            "role": db_user.get("role", "user")
         }
     )
 
